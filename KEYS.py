@@ -5,6 +5,5 @@ APIKEYSECRET=''
 BEARERTOKEN=''
 ACCESSTOKEN=''
 ACCESSTOKENSECRET=''
-ttoken=''
 oaien=''
 id="@X_username"
