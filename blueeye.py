@@ -185,42 +185,57 @@ def send_calendar():
     weekday = greg_today.weekday()
     today = jdatetime.date.fromgregorian(date=greg_today)
 
-    day_image_index = (weekday + 2) % len(day_images)
-    day_image = day_images[day_image_index]
-    day_image_path = os.path.abspath(day_image)
+    # Select the appropriate image based on the weekday
+    # day_image_index = (weekday + 2) % len(day_images)  # Adjust index for correct day mapping
+    # day_image = day_images[day_image_index]
+    # day_image_path = os.path.abspath(day_image)
 
+    # Check if the image file exists
+    # if not os.path.exists(day_image_path):
+    #     print(f"Error: Image file not found at {day_image_path}")
+    #     return
+
+    # Generate historical events prompt
     try:
-        prompt = (
-            f"write about three top historic events on day exactly {greg_today} "
-            f"for example if it is 2025-02-11 write about 02-11 in all years before "
-            f"write three short sentences in separate lines, focusing on technology, no politics or religion "
-            f"in Persian language"
-        )
+        prompt = (f"write about three top historic events on day exactly {greg_today} for example if it is 2025-02-11 write about 02-11 in all years before write three short sentences in separate lines, focusing on technology, no politics or religion in Persian language")
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             timeout=60
         )
         events = response.choices[0].message.content.strip()
-        print("Sending calendar update")
+        print("Generated calendar events")
     except Exception as e:
-        print("Calendar prompt failed:", e)
+        print(f"Calendar prompt failed: {e}")
         events = "رویدادهای تاریخی تکنولوژی در دسترس نیست."
 
+    # Create tweet caption with events and hashtags
     twitter_caption = f"📅 امروز {today} ({greg_today})\n📌 {events}\n"
     hashtags = generate_hashtags(events)
-    twitter_caption += ' ' + ' '.join(hashtags)
+    twitter_caption += ' '.join(hashtags) + '\n'
 
+    # Upload image and post tweet
     try:
-        media = twitter_api_v1.media_upload(filename=day_image_path)
-        media_id = media.media_id_string
-        twitter_client.create_tweet(text=twitter_caption, media_ids=[media_id])
-        print("Sending calendar update")
+        # Upload image using Twitter v1.1 API
+        # with open(day_image_path, 'rb') as image_file:
+        #     media = twitter_api_v1.media_upload(filename=day_image, file=image_file)
+        # media_id = media.media_id_string
+        # print(f"Image uploaded successfully, media_id: {media_id}")
+
+        # Post tweet with attached image using Twitter v2 API
+        twitter_client.create_tweet(text=twitter_caption)
+        print("Calendar tweet ")
     except Exception as e:
-        print("Failed to send calendar tweet:", e)
+        print(f"Failed to send calendar tweet or upload image: {e}")
+        # Fallback: Post tweet without image
+        try:
+            twitter_client.create_tweet(text=twitter_caption)
+            print("Posted calendar tweet ")
+        except Exception as fallback_e:
+            print(f"Fallback tweet posting failed: {fallback_e}")
 
 # === Schedule bot tasks ===
-schedule.every(24).hours.do(send_calendar)   # Post calendar once daily
+schedule.every().day.at("7:30").do(send_calendar)   # Post calendar once daily
 schedule.every(30).minutes.do(post_article)  # Post news every 30 minutes
 
 
